@@ -1,4 +1,5 @@
 import express from "express"
+import mongoose from "mongoose"
 import { User, Form, Resp } from "./models.js"
 import { authUrl, tokenByCode, whoami, bases, tables, createRec } from "./airtable.js"
 import { shouldShowQuestion, validateAns } from "./logic.js"
@@ -9,10 +10,19 @@ const allowed = new Set(["singleLineText", "multilineText", "singleSelect", "mul
 const r = express.Router()
 
 r.get("/auth/airtable/login", async (req, res) => {
-  res.redirect(authUrl())
+  const ss = (process.env.COOKIE_SAMESITE || "lax").toLowerCase()
+  const opts = { httpOnly: true, sameSite: ss }
+  if (ss === "none") opts.secure = true
+  const st = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+  res.cookie("oauth_state", st, opts)
+  res.redirect(authUrl(st))
 })
 
 r.get("/auth/airtable/callback", async (req, res) => {
+  const state = req.query.state
+  const cst = req.cookies.oauth_state
+  if (!state || !cst || state !== cst) return res.status(400).send("invalid_state")
+  res.clearCookie("oauth_state")
   const code = req.query.code
   const t = await tokenByCode(code)
   const me = await whoami(t.access_token)
@@ -22,7 +32,10 @@ r.get("/auth/airtable/callback", async (req, res) => {
     { uid: me.id, name: me.name, email: me.email, token: t.access_token, refresh: t.refresh_token, loginAt: new Date() },
     { upsert: true }
   )
-  res.cookie("uid", me.id, { httpOnly: false, sameSite: "lax" })
+  const ss = (process.env.COOKIE_SAMESITE || "lax").toLowerCase()
+  const opts = { httpOnly: false, sameSite: ss }
+  if (ss === "none") opts.secure = true
+  res.cookie("uid", me.id, opts)
   res.redirect(process.env.APP_URL || "http://localhost:5173")
 })
 
@@ -54,7 +67,9 @@ r.post("/forms", async (req, res) => {
 
 r.get("/forms/:id", async (req, res) => {
   if (!isDbReady()) return res.status(503).json({ err: "db" })
-  const f = await Form.findById(req.params.id)
+  const id = req.params.id
+  if (!mongoose.isValidObjectId(id)) return res.status(404).json({ err: "nf" })
+  const f = await Form.findById(id)
   if (!f) return res.status(404).json({ err: "nf" })
   res.json(f)
 })
@@ -71,7 +86,9 @@ r.post("/forms/:id/submit", async (req, res) => {
   if (!isDbReady()) return res.status(503).json({ err: "db" })
   const u = await User.findOne({ uid: req.cookies.uid })
   if (!u) return res.status(401).json({ err: "no_user" })
-  const f = await Form.findById(req.params.id)
+  const id = req.params.id
+  if (!mongoose.isValidObjectId(id)) return res.status(404).json({ err: "nf" })
+  const f = await Form.findById(id)
   if (!f) return res.status(404).json({ err: "nf" })
   const ans = req.body?.answers || {}
   const errs = validateAns(f.qs, ans)
@@ -82,8 +99,11 @@ r.post("/forms/:id/submit", async (req, res) => {
     if (!show) continue
     const v = ans[q.key]
     if (v === undefined) continue
-    if (q.type === "multipleAttachments") af[q.label || q.key] = Array.isArray(v) ? v.map(u => ({ url: u })) : [{ url: v }]
-    else af[q.label || q.key] = v
+    const fname = q.fname || q.label || q.key
+    if (q.type === "multipleAttachments") {
+      const arr = Array.isArray(v) ? v : (typeof v === "string" ? v.split(",").map(s => s.trim()).filter(Boolean) : [])
+      af[fname] = arr.map(u => ({ url: u }))
+    } else af[fname] = v
   }
   const rec = await createRec(u.token, f.baseId, f.tableName, af)
   const doc = await Resp.create({ formId: f.id, airtableRecordId: rec.id, answers: ans, status: "ok" })

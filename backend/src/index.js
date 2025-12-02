@@ -16,6 +16,13 @@ await initDb(process.env.MONGO_URL)
 
 app.use(routes)
 
-const port = process.env.PORT || 4000
-app.listen(port, () => {})
-
+function start(p){
+  const s = app.listen(p, () => {})
+  s.on("error", (e) => {
+    if (e && e.code === "EADDRINUSE") {
+      const np = p === 4000 ? 4010 : (Number(p) + 1)
+      start(np)
+    } else throw e
+  })
+}
+start(process.env.PORT || 4000)

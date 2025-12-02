@@ -19,6 +19,7 @@ const QSchema = new mongoose.Schema(
   {
     key: String,
     fieldId: String,
+    fname: String,
     label: String,
     type: String,
     req: Boolean,

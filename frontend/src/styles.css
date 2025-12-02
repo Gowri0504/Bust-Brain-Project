@@ -1,0 +1,20 @@
+:root{--bg:#0b0f1a;--card:#121826;--pri:#7c4dff;--pri2:#b388ff;--txt:#e6e6f0;--mut:#8c93a5;--ok:#4caf50;--bad:#ef5350}
+html,body,#root{height:100%}
+body{margin:0;background:linear-gradient(135deg,#0b0f1a,#0e1524);color:var(--txt);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu}
+.wrap{max-width:980px;margin:0 auto;padding:24px}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.brand{font-weight:700;letter-spacing:.3px}
+.links{display:flex;gap:12px}
+.btn{appearance:none;border:0;border-radius:10px;padding:10px 14px;background:var(--pri);color:#fff;cursor:pointer}
+.btn.sec{background:#2b344a}
+.card{background:var(--card);border:1px solid #1f2940;border-radius:14px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.grid{display:grid;gap:12px}
+.row{display:flex;gap:12px;align-items:center}
+label{display:block;font-weight:600;margin-bottom:6px}
+input,select,textarea{width:100%;background:#0e1422;border:1px solid #23304b;color:var(--txt);border-radius:10px;padding:10px}
+textarea{min-height:90px}
+.pill{display:inline-block;border-radius:999px;padding:6px 10px;background:#1a2236;color:var(--mut);font-size:12px}
+.title{font-size:20px;font-weight:700;margin-bottom:10px}
+.mut{color:var(--mut)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:12px;justify-content:space-between;border-bottom:1px solid #1f2940;padding:8px 0}

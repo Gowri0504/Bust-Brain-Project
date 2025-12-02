@@ -2,12 +2,15 @@ import axios from "axios"
 
 const API = "https://api.airtable.com/v0"
 
-export function authUrl() {
+export function authUrl(state) {
   const p = new URLSearchParams({
     client_id: process.env.AIR_CLIENT_ID,
     redirect_uri: process.env.AIR_REDIRECT_URL,
-    response_type: "code"
+    response_type: "code",
+    state
   })
+  const scope = process.env.AIR_SCOPE || "schema.bases:read data.records:read data.records:write"
+  p.append("scope", scope)
   return `https://airtable.com/oauth2/v1/authorize?${p.toString()}`
 }
 
